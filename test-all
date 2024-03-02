@@ -1,0 +1,14 @@
+set -e
+
+test() {
+	cargo test "$@"
+	wasm-pack test --headless --chrome "$@"
+}
+
+test
+test --no-default-features --features "exit"
+test --no-default-features --features "storage"
+test --no-default-features --features "cmd-line"
+test --no-default-features --features "config"
+
+echo "ALL OK"
