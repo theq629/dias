@@ -1,6 +1,6 @@
 [package]
 name = "dias"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 description = "Minimal cross-platform support for common platform specific things, intended for small games for web plus desktopy platforms."
