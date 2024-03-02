@@ -8,19 +8,15 @@
 mod availability;
 
 #[cfg(feature = "exit")]
-#[cfg_attr(docsrs, doc(cfg(feature = "exit")))]
 pub mod exit;
 
 #[cfg(feature = "storage")]
-#[cfg_attr(docsrs, doc(cfg(feature = "storage")))]
 pub mod storage;
 
 #[cfg(feature = "cmd-line")]
-#[cfg_attr(docsrs, doc(cfg(feature = "cmd-line")))]
 pub mod cmd_line;
 
 #[cfg(feature = "config")]
-#[cfg_attr(docsrs, doc(cfg(feature = "config")))]
 pub mod config;
 
 pub use availability::AvailabilityError;

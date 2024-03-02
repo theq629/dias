@@ -60,7 +60,6 @@ where
 }
 
 #[cfg(feature = "storage")]
-#[cfg_attr(docsrs, doc(cfg(feature = "storage")))]
 pub fn write_config_file<T>(
     config: &T,
     file: &mut impl crate::storage::WritableFile,
@@ -72,7 +71,6 @@ where
 }
 
 #[cfg(feature = "storage")]
-#[cfg_attr(docsrs, doc(cfg(feature = "storage")))]
 pub fn read_config_file<T>(file: &impl crate::storage::File) -> std::io::Result<T>
 where
     T: for<'a> Deserialize<'a>,
