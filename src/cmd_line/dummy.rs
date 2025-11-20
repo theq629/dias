@@ -4,6 +4,7 @@ use core::str::FromStr;
 use std::error::Error;
 
 /// Parser which will always have no values for arguments.
+#[derive(Default)]
 pub struct DummyParser {
     num_args: usize,
 }
@@ -24,13 +25,13 @@ impl super::Parser for DummyParser {
         ArgId::new(id)
     }
 
-    fn add_option<T: 'static, E>(
+    fn add_option<T, E>(
         &mut self,
         short: &'static [char],
         long: &'static [&'static str],
     ) -> Self::ArgId<T>
     where
-        T: FromStr<Err = E>,
+        T: FromStr<Err = E> + 'static,
         E: 'static + Into<Box<dyn Error>>,
     {
         self.add_option_with(short, long, FromStr::from_str)
@@ -57,6 +58,7 @@ impl super::Parser for DummyParser {
 }
 
 /// Parsed arguments which will always have no values.
+#[derive(Default)]
 pub struct DummyParsed {}
 
 impl DummyParsed {
@@ -92,7 +94,7 @@ mod tests {
     #[test]
     fn options() {
         let mut parser = DummyParser::new();
-        let foo = parser.add_option_with::<_, _, _>(&['f'], &["foo"], |v| str::parse::<i32>(v));
+        let foo = parser.add_option_with::<_, _, _>(&['f'], &["foo"], str::parse::<i32>);
         let bar = parser.add_option::<String, _>(&['b'], &["bar"]);
 
         let args = parser.parse().unwrap();

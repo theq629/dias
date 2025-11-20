@@ -15,13 +15,13 @@ impl<T> Shared<T> {
     pub fn read(&self) -> std::io::Result<RwLockReadGuard<'_, T>> {
         self.value
             .read()
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+            .map_err(|e| std::io::Error::other(e.to_string()))
     }
 
     pub fn write(&self) -> std::io::Result<RwLockWriteGuard<'_, T>> {
         self.value
             .write()
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+            .map_err(|e| std::io::Error::other(e.to_string()))
     }
 }
 
@@ -67,10 +67,10 @@ impl FileSystem {
             .cloned()
     }
 
-    pub fn get_or_create(&mut self, path: &String) -> std::io::Result<Shared<MemoryFile>> {
+    pub fn get_or_create(&mut self, path: &str) -> std::io::Result<Shared<MemoryFile>> {
         Ok(self
             .contents
-            .entry(path.clone())
+            .entry(path.to_owned())
             .or_insert_with(|| Shared::new(MemoryFile::new()))
             .clone())
     }
