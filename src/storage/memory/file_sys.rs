@@ -12,13 +12,13 @@ impl<T> Shared<T> {
         }
     }
 
-    pub fn read(&self) -> std::io::Result<RwLockReadGuard<T>> {
+    pub fn read(&self) -> std::io::Result<RwLockReadGuard<'_, T>> {
         self.value
             .read()
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
     }
 
-    pub fn write(&self) -> std::io::Result<RwLockWriteGuard<T>> {
+    pub fn write(&self) -> std::io::Result<RwLockWriteGuard<'_, T>> {
         self.value
             .write()
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
