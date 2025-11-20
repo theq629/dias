@@ -66,7 +66,7 @@ impl super::super::WritableFile for File<ReadWrite> {
 
     fn write_text(&mut self) -> std::io::Result<Self::WriteText> {
         if let Some(dir_path) = self.path.parent() {
-            create_dir_all(&dir_path)?;
+            create_dir_all(dir_path)?;
         }
         Ok(FileWrite::new(AtomicWriteFile::open(&self.path)?))
     }

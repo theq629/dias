@@ -6,10 +6,10 @@ use std::error::Error;
 use std::ffi::OsString;
 
 trait ArgHandler {
-    fn match_arg<'a>(&'a self, lexopt_arg: &lexopt::Arg) -> Option<String>;
+    fn match_arg(&self, lexopt_arg: &lexopt::Arg) -> Option<String>;
     fn get_value(
         &self,
-        arg_name: &String,
+        arg_name: &str,
         lexopt_parser: &mut lexopt::Parser,
     ) -> Result<Box<dyn Any>, ParsingError>;
 }
@@ -20,15 +20,15 @@ struct FlagArgHandler {
 }
 
 impl ArgHandler for FlagArgHandler {
-    fn match_arg<'a>(&'a self, lexopt_arg: &lexopt::Arg) -> Option<String> {
+    fn match_arg(&self, lexopt_arg: &lexopt::Arg) -> Option<String> {
         match lexopt_arg {
-            lexopt::Arg::Short(name) => self.short.contains(&name).then(|| name.to_string()),
-            lexopt::Arg::Long(name) => self.long.contains(&name).then(|| name.to_string()),
+            lexopt::Arg::Short(name) => self.short.contains(name).then(|| name.to_string()),
+            lexopt::Arg::Long(name) => self.long.contains(name).then(|| name.to_string()),
             _ => None,
         }
     }
 
-    fn get_value(&self, _: &String, _: &mut lexopt::Parser) -> Result<Box<dyn Any>, ParsingError> {
+    fn get_value(&self, _: &str, _: &mut lexopt::Parser) -> Result<Box<dyn Any>, ParsingError> {
         Ok(Box::new(true))
     }
 }
@@ -45,17 +45,17 @@ where
     E: 'static + Into<Box<dyn Error>>,
     F: 'static + Fn(&str) -> Result<T, E>,
 {
-    fn match_arg<'a>(&'a self, lexopt_arg: &lexopt::Arg) -> Option<String> {
+    fn match_arg(&self, lexopt_arg: &lexopt::Arg) -> Option<String> {
         match lexopt_arg {
-            lexopt::Arg::Short(name) => self.short.contains(&name).then(|| name.to_string()),
-            lexopt::Arg::Long(name) => self.long.contains(&name).then(|| name.to_string()),
+            lexopt::Arg::Short(name) => self.short.contains(name).then(|| name.to_string()),
+            lexopt::Arg::Long(name) => self.long.contains(name).then(|| name.to_string()),
             _ => None,
         }
     }
 
     fn get_value(
         &self,
-        arg_name: &String,
+        arg_name: &str,
         lexopt_parser: &mut lexopt::Parser,
     ) -> Result<Box<dyn Any>, ParsingError> {
         let value = lexopt_parser
@@ -75,6 +75,8 @@ where
     }
 }
 
+type ParseOutput = Option<(usize, Box<dyn Any>)>;
+
 pub struct Parser {
     args: Vec<Box<dyn ArgHandler>>,
 }
@@ -89,13 +91,10 @@ impl Parser {
         I: IntoIterator,
         I::Item: Into<OsString>,
     {
-        Ok(self.parse_lexopt(lexopt::Parser::from_iter(args))?)
+        self.parse_lexopt(lexopt::Parser::from_iter(args))
     }
 
-    fn parse_next(
-        &self,
-        lexopt_parser: &mut lexopt::Parser,
-    ) -> Result<Option<(usize, Box<dyn Any>)>, ParsingError> {
+    fn parse_next(&self, lexopt_parser: &mut lexopt::Parser) -> Result<ParseOutput, ParsingError> {
         if let Some(lexopt_arg) = lexopt_parser
             .next()
             .map_err(|_| ParsingError::ParsingFailed)?
@@ -121,12 +120,8 @@ impl Parser {
 
     fn parse_lexopt(&self, mut lexopt_parser: lexopt::Parser) -> Result<Parsed, ParsingError> {
         let mut values: Vec<Option<Box<dyn Any>>> = self.args.iter().map(|_| None).collect();
-        loop {
-            if let Some((id, value)) = self.parse_next(&mut lexopt_parser)? {
-                values[id] = Some(value);
-            } else {
-                break;
-            }
+        while let Some((id, value)) = self.parse_next(&mut lexopt_parser)? {
+            values[id] = Some(value);
         }
         Ok(Parsed { values })
     }
@@ -146,13 +141,13 @@ impl super::Parser for Parser {
         ArgId::new(id)
     }
 
-    fn add_option<T: 'static, E>(
+    fn add_option<T, E>(
         &mut self,
         short: &'static [char],
         long: &'static [&'static str],
     ) -> Self::ArgId<T>
     where
-        T: FromStr<Err = E>,
+        T: FromStr<Err = E> + 'static,
         E: 'static + Into<Box<dyn Error>>,
     {
         self.add_option_with(short, long, FromStr::from_str)
@@ -257,13 +252,13 @@ mod tests {
         parser.add_option::<i32, _>(&['f'], &["foo"]);
         parser.add_flag(&['b'], &["bar"]);
 
-        assert!(match parser.parse_args(&["", "--foo", "123", "abc"]) {
-            Err(ParsingError::UnknownValue) => true,
-            _ => false,
-        });
-        assert!(match parser.parse_args(&["", "--bar", "abc"]) {
-            Err(ParsingError::UnknownValue) => true,
-            _ => false,
-        });
+        assert!(matches!(
+            parser.parse_args(&["", "--foo", "123", "abc"]),
+            Err(ParsingError::UnknownValue),
+        ));
+        assert!(matches!(
+            parser.parse_args(&["", "--bar", "abc"]),
+            Err(ParsingError::UnknownValue)
+        ));
     }
 }

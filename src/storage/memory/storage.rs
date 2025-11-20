@@ -35,7 +35,7 @@ impl<R> super::super::File for File<R> {
         Ok(self
             .fs
             .read()
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?
+            .map_err(|e| std::io::Error::other(e.to_string()))?
             .exists(&self.path))
     }
 
@@ -127,6 +127,12 @@ impl super::super::WritableParentDir for Dir<ReadWrite> {
 /// Basic implementation of storage in memory, mostly for writing tests against storage.
 pub struct MemoryStorage {
     fs: Shared<FileSystem>,
+}
+
+impl Default for MemoryStorage {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MemoryStorage {

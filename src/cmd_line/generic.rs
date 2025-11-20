@@ -14,13 +14,13 @@ pub trait Parser {
     ) -> Self::ArgId<bool>;
 
     /// Add an option argument with a value parsed via [FromStr].
-    fn add_option<T: 'static, E>(
+    fn add_option<T, E>(
         &mut self,
         short: &'static [char],
         long: &'static [&'static str],
     ) -> Self::ArgId<T>
     where
-        T: FromStr<Err = E>,
+        T: FromStr<Err = E> + 'static,
         E: 'static + Into<Box<dyn Error>>;
 
     /// Add an option argument with a value parsed via a given function.
@@ -144,19 +144,19 @@ pub(crate) mod tests {
         parser.add_flag(&['f'], &["foo"]);
         parser.add_flag(&['b'], &["bar"]);
 
-        assert!(match parser.parse_test_args(&[("baz", None)]) {
-            Err(ParsingError::UnknownOption { arg_name }) if arg_name == "baz".to_string() => true,
-            _ => false,
-        });
-        assert!(match parser.parse_test_args(&[("x", None)]) {
-            Err(ParsingError::UnknownOption { arg_name }) if arg_name == "x".to_string() => true,
-            _ => false,
-        });
+        assert!(matches!(
+            parser.parse_test_args(&[("baz", None)]),
+            Err(ParsingError::UnknownOption { arg_name }) if arg_name == "baz"
+        ));
+        assert!(matches!(
+            parser.parse_test_args(&[("x", None)]),
+            Err(ParsingError::UnknownOption { arg_name }) if arg_name == "x",
+        ));
     }
 
     pub fn options<P: ParseTest>() {
         let mut parser = P::new();
-        let foo = parser.add_option_with::<_, _, _>(&['f'], &["foo"], |v| str::parse::<i32>(v));
+        let foo = parser.add_option_with::<_, _, _>(&['f'], &["foo"], str::parse::<i32>);
         let bar = parser.add_option::<String, _>(&['b'], &["bar"]);
 
         let args = parser.parse_test_args::<&str>(&[]).unwrap();
@@ -187,38 +187,35 @@ pub(crate) mod tests {
         assert_eq!(args.get(&foo), Some(123).as_ref());
         assert_eq!(args.get(&bar), Some("abc".to_string()).as_ref());
 
-        assert!(
-            match parser.parse_test_args(&[("foo", Some("abc")), ("123", None)]) {
-                Err(ParsingError::ValueParsingFailed { arg_name, .. })
-                    if arg_name == "foo".to_string() =>
-                    true,
-                _ => false,
-            }
-        );
+        assert!(matches!(
+            parser.parse_test_args(&[("foo", Some("abc")), ("123", None)]),
+            Err(ParsingError::ValueParsingFailed { arg_name, .. })
+                if arg_name == "foo"
+        ));
     }
 
     pub fn options_unknown<P: ParseTest>() {
         let mut parser = P::new();
-        parser.add_option_with::<_, _, _>(&['f'], &["foo"], |v| str::parse::<i32>(v));
+        parser.add_option_with::<_, _, _>(&['f'], &["foo"], str::parse::<i32>);
         parser.add_option::<String, _>(&['b'], &["bar"]);
 
-        assert!(match parser.parse_test_args(&[("baz", Some("123"))]) {
-            Err(ParsingError::UnknownOption { arg_name }) if arg_name == "baz".to_string() => true,
-            _ => false,
-        });
-        assert!(match parser.parse_test_args(&[("x", Some("123"))]) {
-            Err(ParsingError::UnknownOption { arg_name }) if arg_name == "x".to_string() => true,
-            _ => false,
-        });
+        assert!(matches!(
+            parser.parse_test_args(&[("baz", Some("123"))]),
+            Err(ParsingError::UnknownOption { arg_name }) if arg_name == "baz",
+        ));
+        assert!(matches!(
+            parser.parse_test_args(&[("x", Some("123"))]),
+            Err(ParsingError::UnknownOption { arg_name }) if arg_name == "x"
+        ));
     }
 
     pub fn options_missing_value<P: ParseTest>() {
         let mut parser = P::new();
-        parser.add_option_with::<_, _, _>(&['f'], &["foo"], |v| str::parse::<i32>(v));
+        parser.add_option_with::<_, _, _>(&['f'], &["foo"], str::parse::<i32>);
 
-        assert!(match parser.parse_test_args(&[("foo", None)]) {
-            Err(ParsingError::MissingValue { arg_name }) if arg_name == "foo".to_string() => true,
-            _ => false,
-        });
+        assert!(matches!(
+            parser.parse_test_args(&[("foo", None)]),
+            Err(ParsingError::MissingValue { arg_name }) if arg_name == "foo"
+        ));
     }
 }

@@ -9,7 +9,7 @@ impl StorageReader {
     pub fn new(stored: Shared<MemoryFile>) -> std::io::Result<Self> {
         let read = stored
             .read()
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
         Ok(Self {
             cursor: Cursor::new(read.contents.clone()),
         })
@@ -45,7 +45,7 @@ impl Write for StorageWriter {
         let contents = &mut self
             .stored
             .write()
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?
+            .map_err(|e| std::io::Error::other(e.to_string()))?
             .contents;
         contents.clear();
         contents.extend(&self.buf);
